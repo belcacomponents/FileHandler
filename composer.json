@@ -1,0 +1,22 @@
+{
+    "name": "belca/filehandler",
+    "description": "File handler for Dios CMS",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Oleg Dmitrochenko",
+            "email": "info@dios-studio.by"
+        }
+    ],
+    "requires": {
+       "php": ">=7.0",
+       "belca/support": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "Belca\\FileHandler\\": "src"
+        }
+    },
+    "minimum-stability": "dev"
+}
