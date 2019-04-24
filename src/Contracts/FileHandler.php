@@ -310,6 +310,34 @@ interface FileHandler
     public function getAllHandlerKeys();
 
     /**
+     * Задает сценарий обработки оригинального файла.
+     *
+     * @param mixed $handlingScript
+     */
+    public function setOriginalFileHandlingScript($handlingScript);
+
+    /**
+     * Возвращает сценарий обработки оригинального файла.
+     *
+     * @return mixed
+     */
+    public function getOriginalFileHandlingScript();
+
+    /**
+     * Задает имя исполняемого сценария обработки оригинального файла.
+     *
+     * @param string $name
+     */
+    public function setExecutableScriptHandlingOriginalFile($name);
+
+    /**
+     * Возвращает имя исполняемого сценария обработки оригинального файла.
+     *
+     * @return string
+     */
+    public function getExecutableScriptHandlingOriginalFile();
+
+    /**
      * Задает сценарий обработки файла.
      *
      * Сценарий обработки - определенный набор действий, по которому будет
@@ -318,37 +346,60 @@ interface FileHandler
      * Данное значение может не использоваться, тогда вся обработка будет
      * выполняться по текущим настройкам обработки файлов.
      *
-     * @param string $handlingScript
+     * @param mixed $handlingScript
      */
     public function setFileHandlingScript($handlingScript);
 
     /**
      * Возвращает сценарий обработки файла.
      *
-     * @return string
+     * @return mixed
      */
     public function getFileHandlingScript();
+
+    /**
+     * Задает имя исполняемого сценария обработки файла.
+     *
+     * @param string $name
+     */
+    public function setExecutableScriptHandlingFile($name);
+
+    /**
+     * Возвращает имя исполняемого сценария обработки файла.
+     *
+     * @return string
+     */
+    public function getExecutableScriptHandlingFile();
 
     // TODO задать карту обработки, в которой прописано в каком порядке делать обработку,
     // условия обработки, передачу данных и т.п.
 
     /**
-     * Запускает обработку файла по заданным параметрам или параметрам
-     * по умолчанию.
-     *
-     * @return void
-     */
-    public function handle($params = null);
-
-    /**
      * Сохраняет файл со стандартным или указанным именем файла. При успешном
      * сохранении возвращает true.
      *
-     * @param string   $filename Новое имя файла
+     * @param string   $filename Новое имя файла относительно рабочей директории
      * @param bool     $replace  Заменяет существующий файл
      * @return boolean
      */
     public function save($filename = null, $replace = true);
+
+    /**
+     * Запускает модифицирующую и извлекающую обработку главного файла.
+     *
+     * @param  mixed $params Новые параметры обработки файла
+     * @return void
+     */
+    public function handleOriginalFile($params = null);
+
+    /**
+     * Запускает порождающую и извлекающую обработку файла по заданным
+     * параметрам или параметрам по умолчанию.
+     *
+     * @param  mixed $params Новые параметры обработки файла
+     * @return void
+     */
+    public function handle($params = null);
 
     /**
      * Возвращает путь к файлу.
@@ -365,18 +416,28 @@ interface FileHandler
     public function getFilePaths();
 
     /**
-     * Возвращает информацию о файле.
+     * Возвращает всю информацию об оригинальном файле.
      *
+     * Если группировка свойств по обработчикам отключена, то данные внутренних
+     * массивов будут объединены. При этом, если будут одинаковые ключи,
+     * они будут перезаписаны последними значениями.
+     *
+     * @param  boolean $handlerGroups Группировать свойства по обработчикам
      * @return mixed
      */
-    public function getFileInfo();
+    public function getFileInfo($handlerGroups = true);
 
     /**
      * Возвращает всю информацию о всех файлах.
      *
+     * Если группировка свойств по обработчикам отключена, то данные внутренних
+     * массивов будут объединены. При этом, если будут одинаковые ключи,
+     * они будут перезаписаны последними значениями.
+     *
+     * @param  boolean $handlerGroups Группировать свойства по обработчикам
      * @return mixed
      */
-    public function getAllInfo();
+    public function getAllInfo($handlerGroups = true);
 
     /**
      * Задает основные названия свойств файла.

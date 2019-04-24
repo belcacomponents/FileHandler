@@ -3,6 +3,7 @@
 namespace Belca\FileHandler;
 
 use Belca\FileHandler\Contracts\FileHandlerAdapter;
+use Belca\Support\Str;
 
 trait FileHandlerTrait
 {
@@ -24,9 +25,37 @@ trait FileHandlerTrait
     }
 
     /**
-     * Запускает обработку файла по заданным параметрам.
+     * Запускает модифицирующую и извлекающую обработку главного файла.
      *
-     * @return bool
+     * @param  mixed $params Новые параметры обработки файла
+     * @return void
+     */
+    public function handleOriginalFile($params = null)
+    {
+        // получаем сценарий обработки файла с учетом внесенных данных
+
+        // нужно объединить настройки
+
+        // Берем список обработчиков и инициализируем их, передаем конфигурацию
+
+        // Запускаем по порядку обработку передовая туда конфигурацию, путь к файлу
+        // Получает обратные ответы: данные, возможно измененный путь файла,
+        // но не должен. Если путь к файлу изменен, то это нужно проверить.
+
+        // Сохраняем всю полученную информацию в массив в виде свойства
+        // или обработчика и списка свойств.
+
+        // А в функции getFileInfo нужно вернуть все свойства с именами генераторов
+        // или объединенные свойства
+
+    }
+
+    /**
+     * Запускает порождающую и извлекающую обработку файла по заданным
+     * параметрам или параметрам по умолчанию.
+     *
+     * @param  mixed $params Новые параметры обработки файла
+     * @return void
      */
     public function handle($params = null)
     {
@@ -79,7 +108,10 @@ trait FileHandlerTrait
      * Сохраняет файл со стандартным или указанным именем файла. При успешном
      * сохранении возвращает путь к новому файлу.
      *
-     * @param string $filename Новое имя файла
+     * Если сохраняется загруженный файл через метод POST, то он будет перенесен
+     * по указанному пути, остальные файлы копируются.
+     *
+     * @param string $filename Новое имя файла или полный путь к файлу
      * @param bool   $replace  Заменяет существующий файл
      * @return string
      */
@@ -91,17 +123,36 @@ trait FileHandlerTrait
             $filename = $this->filename;
         }
 
-        // TODO проверяем существование файла по указанному пути.
+        $filename = Str::removeDuplicateSymbols($filename, '/');
 
-        // Сохраняем по указанному пути
+        $fullpath = Str::removeDuplicateSymbols($this->directory.'/'.$filename, '/');
+        $path = pathinfo($fullpath, PATHINFO_DIRNAME);
 
-        // Задание имени сохранения файла - генерируется отдельно
-        // TODO сохраняет файл в указаное место
+        // Проверяем существование файла и проверяем, можно ли его перезаписать, если указано в параметрах
+        if (! file_exists($fullpath) || (file_exists($fullpath) && $replace && is_writable($fullpath))) {
+
+            // Создаем указанные директории, если они не существуют
+            if (! file_exists($path) || (file_exists($path) && ! is_dir($path))) {
+                if (! mkdir(pathinfo($fullpath, PATHINFO_DIRNAME), 0755, true)) { // TODO права на создания файла можно измениять
+                    return false;
+                }
+            }
+
+            // Сохраняем файл в по указанному пути и заменяем путь к оригинальному файлу
+            if (move_uploaded_file($this->originalFile, $fullpath) || copy($this->originalFile, $fullpath)) {
+                $this->originalName = $fullpath;
+                $this->file = $filename;
+            } else {
+                return false;
+            }
+        }
+
+        return $filename;
     }
 
     public function getFilePath()
     {
-      return '';
+        return $this->file;
     }
 
     /**
@@ -111,7 +162,7 @@ trait FileHandlerTrait
      */
     public function getFilePaths()
     {
-
+        return $this->files;
     }
 
     /**
@@ -119,9 +170,9 @@ trait FileHandlerTrait
      *
      * @return mixed
      */
-    public function getFileInfo()
+    public function getFileInfo($handlerGroups = true)
     {
-
+        return $this->fileinfo;
     }
 
     /**
@@ -129,9 +180,9 @@ trait FileHandlerTrait
      *
      * @return mixed
      */
-    public function getAllInfo()
+    public function getAllInfo($handlerGroups = true)
     {
-
+        return $this->files;
     }
 
     /**

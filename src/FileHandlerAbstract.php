@@ -20,8 +20,6 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      */
     protected $originalFileinfo;
 
-
-
     /**
      * Обработчики файла.
      *
@@ -93,10 +91,15 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      */
     protected $properties;
 
-    /*public function __construct()
-    {
-      $this->foo = $foo;
-    }*/
+    // TODO
+    protected $file;
+
+    /**
+     * Относительные пути к сохраненными файлам и информация о файлах.
+     *
+     * @var mixed
+     */
+    protected $files;
 
     /**
      * Задает путь к файлу и дополнительные сведения о файле: оригинальное имя,
@@ -154,6 +157,8 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      */
     public function setDirectory($directory = '')
     {
+        $this->directory = $directory;
+        // TODO удалить лишние слеши
         // TODO устанавливает директорию для записи и проверяет возможность записи файлов
     }
 
@@ -466,6 +471,46 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
     }
 
     /**
+     * Задает сценарий обработки оригинального файла.
+     *
+     * @param mixed $handlingScript
+     */
+    public function setOriginalFileHandlingScript($handlingScript)
+    {
+        $this->originalFileHandlingScript = $handlingScript;
+    }
+
+    /**
+     * Возвращает сценарий обработки оригинального файла.
+     *
+     * @return mixed
+     */
+    public function getOriginalFileHandlingScript()
+    {
+        return $this->originalFileHandlingScript;
+    }
+
+    /**
+     * Задает имя исполняемого сценария обработки оригинального файла.
+     *
+     * @param string $name
+     */
+    public function setExecutableScriptHandlingOriginalFile($name)
+    {
+        $this->executableScriptOriginalFile = $name;
+    }
+
+    /**
+     * Возвращает имя исполняемого сценария обработки оригинального файла.
+     *
+     * @return string
+     */
+    public function getExecutableScriptHandlingOriginalFile()
+    {
+        return $this->executableScriptOriginalFile;
+    }
+
+    /**
      * Задает сценарий обработки файла.
      *
      * Сценарий обработки - определенный набор действий, по которому будет
@@ -490,6 +535,34 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
     {
         return $this->script;
     }
+
+    /**
+     * Задает имя исполняемого сценария обработки файла.
+     *
+     * @param string $name
+     */
+    public function setExecutableScriptHandlingFile($name)
+    {
+        $this->executableScript = $name;
+    }
+
+    /**
+     * Возвращает имя исполняемого сценария обработки файла.
+     *
+     * @return string
+     */
+    public function getExecutableScriptHandlingFile()
+    {
+        return $this->executableScript;
+    }
+
+    /**
+     * Запускает модифицирующую и извлекающую обработку главного файла.
+     *
+     * @param  mixed $params Новые параметры обработки файла
+     * @return void
+     */
+    abstract public function handleOriginalFile($params = null);
 
     /**
      * Запускает обработку файла по заданным параметрам или параметрам
@@ -528,14 +601,14 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      *
      * @return mixed
      */
-    abstract public function getFileInfo();
+    abstract public function getFileInfo($handlerGroups = true);
 
     /**
      * Возвращает всю информацию о всех файлах.
      *
      * @return mixed
      */
-    abstract public function getAllInfo();
+    abstract public function getAllInfo($handlerGroups = true);
 
     /**
      * Задает основные названия свойств файла.
