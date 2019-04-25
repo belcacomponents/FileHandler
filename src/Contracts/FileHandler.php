@@ -310,6 +310,20 @@ interface FileHandler
     public function getAllHandlerKeys();
 
     /**
+     * Задает правила обработки оригинального файла.
+     *
+     * @param mixed $handlingScript
+     */
+    public function setOriginalFileHandlingRules($rules);
+
+    /**
+     * Задает правила обработки оригинального файла.
+     *
+     * @return mixed
+     */
+    public function getOriginalFileHandlingRules();
+
+    /**
      * Задает сценарий обработки оригинального файла.
      *
      * @param mixed $handlingScript
@@ -458,7 +472,7 @@ interface FileHandler
      *
      * @return mixed
      */
-    public function getBasicFileProperties();
+    public function getBasicFileProperties($handlerGroups = false);
 
     /**
      * Возвращает дополнительную информацию о файле в соответствии с основными
@@ -466,14 +480,14 @@ interface FileHandler
      *
      * @return mixed
      */
-    public function getAdditionalFileProperties();
+    public function getAdditionalFileProperties($handlerGroups = true);
 
     /**
      * Возвращает базовые свойства всех файлов.
      *
      * @return mixed
      */
-    public function getBasicProperties();
+    public function getBasicProperties($handlerGroups = false);
 
     /**
      * Возвращает дополнительные свойства всех файлов в соответствии с основными
@@ -481,5 +495,5 @@ interface FileHandler
      *
      * @return mixed
      */
-    public function getAdditionalProperties();
+    public function getAdditionalProperties($handlerGroups = true);
 }

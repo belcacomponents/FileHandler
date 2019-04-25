@@ -25,6 +25,52 @@ trait FileHandlerTrait
     }
 
     /**
+     * Сохраняет файл со стандартным или указанным именем файла. При успешном
+     * сохранении возвращает путь к новому файлу.
+     *
+     * Если сохраняется загруженный файл через метод POST, то он будет перенесен
+     * по указанному пути, остальные файлы копируются.
+     *
+     * @param string $filename Новое имя файла или полный путь к файлу
+     * @param bool   $replace  Заменяет существующий файл
+     * @return string
+     */
+    public function save($filename = null, $replace = true)
+    {
+        if ($filename) {
+            // имя файла
+        } elseif (isset($this->filename)) {
+            $filename = $this->filename;
+        }
+
+        $filename = Str::removeDuplicateSymbols($filename, '/');
+
+        $fullpath = Str::removeDuplicateSymbols($this->directory.'/'.$filename, '/');
+        $path = pathinfo($fullpath, PATHINFO_DIRNAME);
+
+        // Проверяем существование файла и проверяем, можно ли его перезаписать, если указано в параметрах
+        if (! file_exists($fullpath) || (file_exists($fullpath) && $replace && is_writable($fullpath))) {
+
+            // Создаем указанные директории, если они не существуют
+            if (! file_exists($path) || (file_exists($path) && ! is_dir($path))) {
+                if (! mkdir(pathinfo($fullpath, PATHINFO_DIRNAME), 0755, true)) { // TODO права на создания файла можно измениять
+                    return false;
+                }
+            }
+
+            // Сохраняем файл в по указанному пути и заменяем путь к оригинальному файлу
+            if (move_uploaded_file($this->originalFile, $fullpath) || copy($this->originalFile, $fullpath)) {
+                $this->originalName = $fullpath;
+                $this->file = $filename;
+            } else {
+                return false;
+            }
+        }
+
+        return $filename;
+    }
+
+    /**
      * Запускает модифицирующую и извлекающую обработку главного файла.
      *
      * @param  mixed $params Новые параметры обработки файла
@@ -32,22 +78,54 @@ trait FileHandlerTrait
      */
     public function handleOriginalFile($params = null)
     {
-        // получаем сценарий обработки файла с учетом внесенных данных
 
-        // нужно объединить настройки
+        // Если задан скрипт обработки, то объединяем заданные настройки,
+        // если они есть
+        if ($this->executableScriptOriginalFile) {
+            // $this->originalFileHandlingScript
+            // TODO объединяем переданную конфигурацию с начальными параметрами
+            // Объединение происходит в классах-адаптерах обработчиках,
+            // либо в какой-то функции по умолчанию
+        }
+        // Если не задан скрипт обработки, то используем только переданные
+        // параметры.
+        else {
+            // TODO в качестве настроек для обработки используем только
+            // заданные настройки, возможно с правилами конфигурации
+        }
 
-        // Берем список обработчиков и инициализируем их, передаем конфигурацию
+        // TODO на выходе получаем набор правил для обработки
+        $script = [];
 
-        // Запускаем по порядку обработку передовая туда конфигурацию, путь к файлу
-        // Получает обратные ответы: данные, возможно измененный путь файла,
-        // но не должен. Если путь к файлу изменен, то это нужно проверить.
+        // TODO если есть порядок выполнения скриптов, и он не изменен,
+        // то выполняем обработку файла по этому порядку, т.о.
+        // инициализация классов происходит в этом же порядке
+        $handlers = [];
+        $this->fileinfo = [];
 
-        // Сохраняем всю полученную информацию в массив в виде свойства
-        // или обработчика и списка свойств.
+        // Если указан порядок выполнения обработчиков, то берем этот список
+        if (! empty($script['execution_order'])) {
+            $handlerKeys = $script['execution_order'];
+        }
+        // Если порядок обработчиков не указан, то берем список ключей обработчиков
+        elseif (! empty($script['handlers'])) {
+            $handlerKeys = array_keys($script['handlers']);
 
-        // А в функции getFileInfo нужно вернуть все свойства с именами генераторов
-        // или объединенные свойства
+            // TODO желательно отсортировать обработчиков: сначала порождающие,
+            // затем извлекающие
+        }
 
+        // Инициализируем соответствующие обработчики и запускаем обработку
+        if (isset($handlerKeys) && count($handlerKeys)) {
+            foreach ($script['execution_order'] as $key) {
+                if (isset($this->usedHandlers[$key]) && $this->usedHandlers[$key] instanceof FileHandlerAdapter) {
+                    $adapters[$key] = new $this->usedHandlers[$key]($config[$key], $script);
+                    $adapters[$key]->setFile($this->file, $this->directory);
+                    $adapters[$key]->handle($this->executableScriptOriginalFile);
+                    $this->fileinfo[$key] = $adapters[$key]->getInfo();
+                }
+            }
+        }
     }
 
     /**
@@ -104,51 +182,7 @@ trait FileHandlerTrait
 
     }
 
-    /**
-     * Сохраняет файл со стандартным или указанным именем файла. При успешном
-     * сохранении возвращает путь к новому файлу.
-     *
-     * Если сохраняется загруженный файл через метод POST, то он будет перенесен
-     * по указанному пути, остальные файлы копируются.
-     *
-     * @param string $filename Новое имя файла или полный путь к файлу
-     * @param bool   $replace  Заменяет существующий файл
-     * @return string
-     */
-    public function save($filename = null, $replace = true)
-    {
-        if ($filename) {
-            // имя файла
-        } elseif (isset($this->filename)) {
-            $filename = $this->filename;
-        }
 
-        $filename = Str::removeDuplicateSymbols($filename, '/');
-
-        $fullpath = Str::removeDuplicateSymbols($this->directory.'/'.$filename, '/');
-        $path = pathinfo($fullpath, PATHINFO_DIRNAME);
-
-        // Проверяем существование файла и проверяем, можно ли его перезаписать, если указано в параметрах
-        if (! file_exists($fullpath) || (file_exists($fullpath) && $replace && is_writable($fullpath))) {
-
-            // Создаем указанные директории, если они не существуют
-            if (! file_exists($path) || (file_exists($path) && ! is_dir($path))) {
-                if (! mkdir(pathinfo($fullpath, PATHINFO_DIRNAME), 0755, true)) { // TODO права на создания файла можно измениять
-                    return false;
-                }
-            }
-
-            // Сохраняем файл в по указанному пути и заменяем путь к оригинальному файлу
-            if (move_uploaded_file($this->originalFile, $fullpath) || copy($this->originalFile, $fullpath)) {
-                $this->originalName = $fullpath;
-                $this->file = $filename;
-            } else {
-                return false;
-            }
-        }
-
-        return $filename;
-    }
 
     public function getFilePath()
     {
@@ -188,11 +222,34 @@ trait FileHandlerTrait
     /**
      * Возвращает основную информацию о файле в соответствии с основными полями.
      *
+     * @param  boolean $handlerGroups Группировка значений по обработчикам
      * @return mixed
      */
-    public function getBasicFileProperties()
+    public function getBasicFileProperties($handlerGroups = false)
     {
+        $props = [];
 
+        if (! empty($this->properties) && is_array($this->properties)) {
+
+            // Поля указываются через точку с учетом имени обработчика
+            foreach ($this->properties as $property) {
+                $keys = explode('.', $property);
+
+                if (count($keys) > 0 && isset($this->fileinfo[$keys[0]])) {
+                    $tmp = $this->fileinfo[$keys[0]];
+
+                    foreach ($keys as $key) {
+                        $tmp = $tmp[$key] ?? null;
+                    }
+
+                    if ($tmp) {
+                        $props[$key] = $tmp;
+                    }
+                }
+            }
+        }
+
+        return $props;
     }
 
     /**
@@ -201,7 +258,7 @@ trait FileHandlerTrait
      *
      * @return mixed
      */
-    public function getAdditionalFileProperties()
+    public function getAdditionalFileProperties($handlerGroups = true)
     {
 
     }
@@ -211,7 +268,7 @@ trait FileHandlerTrait
      *
      * @return mixed
      */
-    public function getBasicProperties()
+    public function getBasicProperties($handlerGroups = false)
     {
 
     }
@@ -222,7 +279,7 @@ trait FileHandlerTrait
      *
      * @return mixed
      */
-    public function getAdditionalProperties()
+    public function getAdditionalProperties($handlerGroups = true)
     {
 
     }

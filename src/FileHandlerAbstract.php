@@ -3,6 +3,7 @@
 namespace Belca\FileHandler;
 
 use Belca\FileHandler\Contracts\FileHandler as FileHandlerInterface;
+use Belca\Support\Str;
 
 abstract class FileHandlerAbstract implements FileHandlerInterface
 {
@@ -78,11 +79,46 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
     protected $generatedConfig;
 
     /**
+     * Правила обработки оригинального файла.
+     *
+     * @var mixed
+     */
+    protected $originalFileHandlingRules = [];
+
+    /**
+     * Правила обработки файла.
+     *
+     * @var mixed
+     */
+    protected $fileHandlingRules = [];
+
+    /**
+     * Сценарий обработки оригинального файла.
+     *
+     * @var mixed
+     */
+    protected $originalFileHandlingScript;
+
+    /**
      * Сценарий обработки файла.
+     *
+     * @var mixed
+     */
+    protected $script;
+
+    /**
+     * Имя исполняемого сценария обработки оригинального файла.
      *
      * @var string
      */
-    protected $script;
+    protected $executableScriptOriginalFile;
+
+    /**
+     * Имя исполняемого сценария обработки файла.
+     *
+     * @var string
+     */
+    protected $executableScript;
 
     /**
      * Названия основных свойств файла.
@@ -91,7 +127,11 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      */
     protected $properties;
 
-    // TODO
+    /**
+     * Путь к обрабатываемому файлу. Может совпадать с оригинальным файлом.
+     *
+     * @var string
+     */
     protected $file;
 
     /**
@@ -100,6 +140,11 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      * @var mixed
      */
     protected $files;
+
+    public function __construct()
+    {
+        $this->usedHandlers = array_merge($this->handlers ?? [], self::$globalHandlers ?? []);
+    }
 
     /**
      * Задает путь к файлу и дополнительные сведения о файле: оригинальное имя,
@@ -157,9 +202,8 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      */
     public function setDirectory($directory = '')
     {
-        $this->directory = $directory;
-        // TODO удалить лишние слеши
         // TODO устанавливает директорию для записи и проверяет возможность записи файлов
+        $this->directory = Str::removeDuplicateSymbols($directory, '/');
     }
 
     /**
@@ -471,6 +515,26 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
     }
 
     /**
+     * Задает правила обработки оригинального файла.
+     *
+     * @param mixed $handlingScript
+     */
+    public function setOriginalFileHandlingRules($rules)
+    {
+        $this->originalFileHandlingRules = $rules;
+    }
+
+    /**
+     * Задает правила обработки оригинального файла.
+     *
+     * @return mixed
+     */
+    public function getOriginalFileHandlingRules()
+    {
+        return $this->originalFileHandlingRules;
+    }
+
+    /**
      * Задает сценарий обработки оригинального файла.
      *
      * @param mixed $handlingScript
@@ -635,7 +699,7 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      *
      * @return mixed
      */
-    abstract public function getBasicFileProperties();
+    abstract public function getBasicFileProperties($handlerGroups = false);
 
     /**
      * Возвращает дополнительную информацию о файле в соответствии с основными
@@ -643,14 +707,14 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      *
      * @return mixed
      */
-    abstract public function getAdditionalFileProperties();
+    abstract public function getAdditionalFileProperties($handlerGroups = true);
 
     /**
      * Возвращает базовые свойства всех файлов.
      *
      * @return mixed
      */
-    abstract public function getBasicProperties();
+    abstract public function getBasicProperties($handlerGroups = false);
 
     /**
      * Возвращает дополнительные свойства всех файлов в соответствии с основными
@@ -658,5 +722,5 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      *
      * @return mixed
      */
-    abstract public function getAdditionalProperties();
+    abstract public function getAdditionalProperties($handlerGroups = true);
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Belca\FileHandler\Contracts;
+namespace Belca\FileHandler;
 
 /**
  * Адаптер обработки файла.
@@ -9,8 +9,51 @@ namespace Belca\FileHandler\Contracts;
  * - слияние переданных настроек указанным методом;
  * - вызов обработки файла по указанному сценарию (если используется).
  */
-class FileHandlerAdapter
+class FileHandlerAdapterAbstract
 {
+    const EXTRACTING = 'extracting';
+
+    const GENERATING = 'generating';
+
+    const MODIFYING = 'modifying';
+
+    protected $config;
+
+    /**
+     * Название исполняемого скрита.
+     *
+     * @var string
+     */
+    protected $executableScript;
+
+    /**
+     * Сценарии обработки файлов.
+     *
+     * @var mixed
+     */
+    protected $scripts;
+
+    /**
+     * Относительный путь к обрабатываемому файлу.
+     *
+     * @var string
+     */
+    protected $file;
+
+    /**
+     * Путь к директории.
+     *
+     * @var string
+     */
+    protected $directory;
+
+    /**
+     * Дополнительная информация для обработки файла.
+     *
+     * @var mixed
+     */
+    protected $data;
+
     public function __construct($config = [], $scripts = []);
 
     /**
@@ -21,56 +64,74 @@ class FileHandlerAdapter
      * @param  mixed  $configs     Перечисление настроек обработчика
      * @return mixed
      */
-    public static function merge($mergeMethod, ...$configs);
+    abstract public static function merge($mergeMethod, ...$configs);
 
     /**
      * Возвращает тип обработчика: порождающий, извлекающий или модифицирующий.
      *
      * @var string
      */
-    public static getHandlerType();
+    abstract public static getHandlerType();
 
     /**
      * Устанавливает конфигурацию обработки файла.
      *
      * @param mixed $config
      */
-    public function setConfig($config = []);
+    public function setConfig($config = [])
+    {
+
+    }
 
     /**
      * Возвращает конфигурацию обработчика.
      *
      * @return mixed
      */
-    public function getConfig();
+    public function getConfig()
+    {
+        // TODO объединяет все данные
+    }
 
     /**
      * Устанавливает возможные сценарии обработки файла.
      *
-     * @param mixed $script
+     * @param mixed $scripts
      */
-    public function setScripts($script);
+    public function setScripts($scripts)
+    {
+        $this->scripts = $scripts;
+    }
 
     /**
      * Возвращает сценарии обработки файла.
      *
      * @return mixed
      */
-    public function getScripts();
+    public function getScripts()
+    {
+        return $this->scripts;
+    }
 
     /**
      * Устанавливает дополнительные данные для обработки.
      *
      * @param mixed $data
      */
-    public function setAdditionalData($data = []);
+    public function setAdditionalData($data = [])
+    {
+        $this->data = $data;
+    }
 
     /**
      * Возвращает дополнительные данные для обработки.
      *
      * @return mixed
      */
-    public function getAdditionalData();
+    public function getAdditionalData()
+    {
+        return $this->data;
+    }
 
     /**
      * Задает относительный путь к обрабатываемому файлу и директорию.
@@ -78,42 +139,64 @@ class FileHandlerAdapter
      * @param string $file
      * @param string $directory
      */
-    public function setFile($file, $directory = null);
+    public function setFile($file, $directory = null)
+    {
+        $this->file = $file;
+
+        if (isset($directory)) {
+            $this->directory = $directory;
+        }
+    }
 
     /**
      * Устанавливает директорию обработки файла.
      *
      * @param string $directory
      */
-    public function setDirectory($directory);
+    public function setDirectory($directory)
+    {
+        $this->directory = $directory;
+    }
 
     /**
      * Возвращает относительный путь к файлу.
      *
      * @return string
      */
-    public function getFile();
+    public function getFile()
+    {
+        return $this->file;
+    }
 
     /**
      * Возвращает путь к директории.
      *
      * @return string
      */
-    public function getDirectory();
+    public function getDirectory()
+    {
+        return $this->directory;
+    }
 
     /**
      * Устанавливает имя исполняемого сценария.
      *
      * @param string $name
      */
-    public function setExecutableScript($name);
+    public function setExecutableScript($name)
+    {
+        $this->executableScript = $name;
+    }
 
     /**
      * Возвращает имя исполняемого сценария.
      *
      * @return string
      */
-    public function getExecutableScript();
+    public function getExecutableScript()
+    {
+        return $this->executableScript;
+    }
 
     /**
      * Запускает обработку файла по указанному сценарию. В случае ошибки,
@@ -122,7 +205,7 @@ class FileHandlerAdapter
      * @param  string $script
      * @return boolean
      */
-    public function handle($script = null);
+    abstract public function handle($script = null);
 
     /**
      * Возвращает всю информацию о всех файлах, в т.ч. пути к файлам.
@@ -130,30 +213,4 @@ class FileHandlerAdapter
      * @return mixed
      */
     public function getInfo();
-
-    // TODO: Все основные данные должны быть возвращены или должны использоваться
-    // какие-то общепринятые данные или методы возврата.
-    //
-    // Для первой обработки файла это могут быть путь, способ обработки,
-    // размер файла и т.п.
-    //
-    // Для второй обработки файла (отдельного), часть информации может уже существовать
-    // и соответственно она не нужна, если не будет изменена.
-    //
-    //  Поэтому вернуть нужно будет только новую информацию, а это может быть
-    //  цвета файла. Для цветов не предназначена общее хранилище и поэтому они
-    //  будут переданы в опциях.
-    //
-    //  Для третей обработке файла могут быть перегенерированы файлы и нужно
-    //  будет вернуть всю информацию.
-    //
-    //  Можно объявить все методы, но они не будут реализовываться или возвращать
-    //  пустоту.
-    //
-    //  Хотя главный файл может тоже возвращать эту информацию и может быть изменен.
-    //
-    //  Возвращаемая информация должна принадлежать какому-то файлу, а их может быть много.
-    //  Соответственно должно быть правильное слияние данных
-
-
 }
