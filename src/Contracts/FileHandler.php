@@ -43,7 +43,7 @@ interface FileHandler
     const METHOD_REPLACE = 'replace';
 
     /**
-     * Метод объединения массиово "reset" - заменяет значения предыдущего
+     * Метод объединения массивов "reset" - заменяет значения предыдущего
      * массива.
      *
      * @var string

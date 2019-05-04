@@ -49,7 +49,7 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      *
      * @var mixed
      */
-    protected $usedHandlers;
+    private $usedHandlers;
 
     /**
      * Настройки обработчиков.
@@ -76,7 +76,7 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      *
      * @var mixed
      */
-    protected $generatedConfig;
+    private $generatedConfig;
 
     /**
      * Правила обработки оригинального файла.
@@ -224,9 +224,26 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      */
     public function setHandlers($handlers = [], $method = self::METHOD_MERGE)
     {
-        // TODO задает обработчиков в зависимости от указанного метода
-        // и сливает данные
-        // Можно абстрактным
+        // WARNING возможно этих обработчиков лучше задавать при инициализации FileHandler,
+        // т.к. получается во время исполнения можно добавлять новых обработчиков
+        // и изменится логика работы программы.
+        // Кроме этого, добавление во время работы глобальных обработчиков также
+        // изменить принцип работы обработки файлов, но потеряется универсальность
+        // добавления обработчиков. ПРи этом, их может столько и не надо,
+        // сколько они будут объявлены. А объявлять их тогда нужно в
+        // соответствии с задачами или методом обработки. Или все же всех?
+        // Они все равно не инициализируются. Кроме этого отпадает необходимость
+        // создания множества классов.
+        switch ($method) {
+          case 'reset':
+            $this->handlers = $handlers;
+            break;
+
+          case 'merge':
+          default:
+            $this->handlers = array_merge($this->handlers, $handlers);
+            break;
+        }
     }
 
     /**
@@ -257,8 +274,11 @@ abstract class FileHandlerAbstract implements FileHandlerInterface
      */
     public function getUsedHandlers()
     {
-        // TODO сливает глобальные данные с локальными (локальные главн)
-        // и возвращает
+        if (! (isset(self::$usedHandlers) && is_array(self::$usedHandlers))) {
+            self::$usedHandlers = array_merge(static::$globalHandlers, $this->handlers);
+        }
+
+        return self::$usedHandlers;
     }
 
     /**
