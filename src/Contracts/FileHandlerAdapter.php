@@ -6,57 +6,51 @@ namespace Belca\FileHandler\Contracts;
  * Адаптер обработки файла.
  *
  * Задачи адаптера:
- * - слияние переданных настроек указанным методом;
+ * - слияние переданных правил и скриптов указанным методом;
  * - вызов обработки файла по указанному сценарию (если используется).
  */
-class FileHandlerAdapter
+interface FileHandlerAdapter
 {
-    public function __construct($config = [], $scripts = []);
+    const EXTRACTING = 'extracting';
+
+    const GENERATING = 'generating';
+
+    const MODIFYING = 'modifying';
 
     /**
-     * Объедиянет переданные конфигурации обработчика указанным методом и
+     * Инициализирует обработчика файла, задает правила обработки и сценарий
+     * обработки файла.
+     *
+     * @param array $rules
+     * @param array $script
+     */
+    public function __construct($rules = [], $script = null);
+
+    /**
+     * Объедиянет переданные правила обработчика указанным методом и
      * возвращает их.
      *
-     * @param  string $mergeMethod Метод слияния
-     * @param  mixed  $configs     Перечисление настроек обработчика
+     * @param  string $method
+     * @param  mixed  $rules
      * @return mixed
      */
-    public static function merge($mergeMethod, ...$configs);
+    public static function mergeRules($method, ...$rules);
+
+    /**
+     * Объединяет переданные скрипты указанным методом слияния и возвращает их.
+     *
+     * @param  string $method
+     * @param  mixed  $scripts
+     * @return mixed
+     */
+    public static function mergeScripts($method, ...$scripts);
 
     /**
      * Возвращает тип обработчика: порождающий, извлекающий или модифицирующий.
      *
      * @var string
      */
-    public static getHandlerType();
-
-    /**
-     * Устанавливает конфигурацию обработки файла.
-     *
-     * @param mixed $config
-     */
-    public function setConfig($config = []);
-
-    /**
-     * Возвращает конфигурацию обработчика.
-     *
-     * @return mixed
-     */
-    public function getConfig();
-
-    /**
-     * Устанавливает возможные сценарии обработки файла.
-     *
-     * @param mixed $script
-     */
-    public function setScripts($script);
-
-    /**
-     * Возвращает сценарии обработки файла.
-     *
-     * @return mixed
-     */
-    public function getScripts();
+    public static function getHandlerType();
 
     /**
      * Устанавливает дополнительные данные для обработки.
@@ -81,6 +75,13 @@ class FileHandlerAdapter
     public function setFile($file, $directory = null);
 
     /**
+     * Возвращает относительный путь к файлу.
+     *
+     * @return string
+     */
+    public function getFilename();
+
+    /**
      * Устанавливает директорию обработки файла.
      *
      * @param string $directory
@@ -88,18 +89,18 @@ class FileHandlerAdapter
     public function setDirectory($directory);
 
     /**
-     * Возвращает относительный путь к файлу.
-     *
-     * @return string
-     */
-    public function getFile();
-
-    /**
      * Возвращает путь к директории.
      *
      * @return string
      */
     public function getDirectory();
+
+    /**
+     * Возвращает абсолютное имя файла.
+     *
+     * @return string
+     */
+    public function getFile();
 
     /**
      * Устанавливает имя исполняемого сценария.
@@ -119,10 +120,10 @@ class FileHandlerAdapter
      * Запускает обработку файла по указанному сценарию. В случае ошибки,
      * при обработке файла, вернет false.
      *
-     * @param  string $script
+     * @param  string  $scriptName
      * @return boolean
      */
-    public function handle($script = null);
+    public function handle($scriptName = null);
 
     /**
      * Возвращает всю информацию о всех файлах, в т.ч. пути к файлам.
