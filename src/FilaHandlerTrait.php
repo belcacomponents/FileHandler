@@ -160,9 +160,9 @@ trait FileHandlerTrait
 
             $sequence = $this->getHandlersSequence();
 
+            // Вызываем по очереди обработчиков и сохраняем значения в те или
+            // другие переменные, в зависимости от типа обработчика
             foreach ($sequence as $handlerKey) {
-                // вызываем по очереди обработчиков
-                // в зависимости от типа обработчика сохраняем те или иные значения
 
                 $className = $this->handlers[$handlerKey] ?? null;
 
@@ -171,16 +171,19 @@ trait FileHandlerTrait
                     $adapters[$handlerKey]->setFile($this->file, $this->directory);
                     $adapters[$handlerKey]->handle($this->scriptName);
 
+                    // Сохраняем информацию извлекающего обработчика: только информация
                     if ($className::getHandlerType() == FileHandlerAdapter::EXTRACTING) {
                         $this->fileinfo[$handlerKey] = $adapters[$handlerKey]->getInfo();
-                    } elseif ($className::getHandlerType() == FileHandlerAdapter::MODIFYING) {
-                        // Вернуть информацию об изменениях и путь к файлу
+                    }
+                    // Сохраняем информацию модифицирующего обработчика: информация и путь к файлу
+                    elseif ($className::getHandlerType() == FileHandlerAdapter::MODIFYING) {
                         $this->fileinfo[$handlerKey] = $adapters[$handlerKey]->getInfo();
                         $this->file = $adapters[$handlerKey]->getFilename();
-                    } else {
-                        // Вернуть информацию о файлах (пути) и информацию
-                        $this->fileinfo[$handlerKey] = $adapters[$handlerKey]->getInfo();
-                        $this->files = $adapters[$handlerKey]->getFilename();
+                    }
+                    // Сохраняем информацию генерирующего обработчика: информация и список файлов
+                    else {
+                        $this->files = array_merge_recursive($this->files, $adapters[$handlerKey]->getInfo());
+                        // WARNING: Как вернуть информацию при извлечении информации из списка обрабатываемых файлов?
                     }
                 }
             }
@@ -264,6 +267,65 @@ trait FileHandlerTrait
     }
 
     /**
+     * Возвращает информацию указанных свойств из указанного массива.
+     *
+     * @param  mixed  $source     Источник информации (массив)
+     * @param  array  $properties Свойства указанные через точку
+     * @param  string $keyType    Формат возвращаемых клюей
+     * @return mixed
+     */
+    protected function getPropertyValuesFromSource($source, $properties = [], $keyType = self::KEY_TYPE_LAST)
+    {
+        $values = [];
+
+        if (! empty($properties) && is_array($properties)) {
+
+            foreach ($properties as $key => $value) {
+
+                // Если в значении указано новое имя свойства (синоним),
+                // то текущий ключ будет оригинальным свойством.
+                // Иначе ключом будет значение.
+                $property = is_string($key) ? $key : $value;
+
+                // Поля указываются через точку с учетом имени обработчика - finfo.mime
+                $propertyValue = Arr::pullThroughSeparator($source, $property);
+
+                if ($propertyValue) {
+                    // Если ключ - строковое значение, то в значении новое имя ключа.
+                    $propertyKey = is_string($key) ? $value : Str::lastElementChain($property);
+                    $values[$propertyKey] = $propertyValue;
+                }
+            }
+        }
+
+        return $values;
+    }
+
+    /**
+     * Возвращает оставшиеся значения свойств из указанного источника (массива),
+     * кроме исключенных (массив свойств указанных через точку).
+     *
+     * @param  mixed  $source     Источник
+     * @param  array  $exceptions Исключен
+     * @param  string $keyType    Формат возвращаемых данных
+     * @return mixed
+     */
+    protected function getPropertyValuesFromSourceExpect($source, $exceptions = [], $keyType = self::KEY_TYPE_ARRAY)
+    {
+        $result = $source;
+
+        while ($expretion = current($exceptions)) {
+
+            // Исключаем значение из массива
+            IlluminateArray::pull($result, $expretion);
+
+            next($exceptions);
+        }
+
+        return $result;
+    }
+
+    /**
      * Возвращает основную информацию о файле в соответствии с основными полями.
      *
      * @param  boolean $handlerGroups Группировка значений по обработчикам
@@ -271,21 +333,7 @@ trait FileHandlerTrait
      */
     public function getBasicFileProperties($handlerGroups = false, $keyType = self::KEY_TYPE_LAST)
     {
-        $props = [];
-
-        if (! empty($this->basicProperties) && is_array($this->basicProperties)) {
-            foreach ($this->basicProperties as $property) {
-
-                // Поля указываются через точку с учетом имени обработчика
-                $value = Arr::pullThroughSeparator($this->fileinfo, $property);
-
-                if ($value) {
-                    $props[Str::lastElementChain($property)] = $value;
-                }
-            }
-        }
-
-        return $props;
+        return $this->getPropertyValuesFromSource($this->fileinfo, $this->basicProperties, $keyType);
     }
 
     /**
@@ -296,15 +344,8 @@ trait FileHandlerTrait
      */
     public function getAdditionalFileProperties($handlerGroups = true, $keyType = self::KEY_TYPE_ARRAY)
     {
-        $result = [];
-
-        // TODO проходим по всему массиву, исключая из значений указанные ключи
-        // т.е. указанные ключи по умолчанию должны быть переделаны в массив,
-        // чтобы сверять их с текущим значением массива ИЛИ НЕТ
-
-        // IlluminateArray
-        // IlluminateArray::set($result, 'products.desk.price', 200);
-        return [];
+        // WARNING: В зависимости от типа будут вызываться разные функции и передаваться разные ключи
+        return $this->getPropertyValuesFromSourceExpect($this->fileinfo, Arr::originalKeys($this->basicProperties), $keyType);
     }
 
     /**
@@ -314,7 +355,15 @@ trait FileHandlerTrait
      */
     public function getBasicProperties($handlerGroups = false, $keyType = self::KEY_TYPE_LAST)
     {
-        return [];
+        $result = [];
+
+        if (! empty($this->files)) {
+            foreach ($this->files as $filename => $fileinfo) {
+                $result[$filename] = $this->getPropertyValuesFromSource($fileinfo, $this->basicProperties, $keyType);
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -325,6 +374,14 @@ trait FileHandlerTrait
      */
     public function getAdditionalProperties($handlerGroups = true, $keyType = self::KEY_TYPE_ARRAY)
     {
-        return [];
+        $result = [];
+
+        if (! empty($this->files)) {
+            foreach ($this->files as $filename => $fileinfo) {
+                $result[$filename] = $this->getPropertyValuesFromSource($fileinfo, Arr::originalKeys($this->basicProperties), $keyType);
+            }
+        }
+
+        return $result;
     }
 }

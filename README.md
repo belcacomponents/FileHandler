@@ -142,7 +142,7 @@ $rules = [
 $scripts = [
     'user-device' => [
         'sequence' => ['fgen', 'finfo'],
-        'properties' => ['finfo.size', 'finfo.mime', 'finfo.created'],
+        'properties' => ['finfo.size', 'finfo.mime' => 'mimetype', 'finfo.created'],
         'handlers' => [
             'fgen-original' => [
 
