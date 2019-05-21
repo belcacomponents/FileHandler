@@ -50,6 +50,14 @@ abstract class FileHandlerAdapterAbstract implements FileHandlerAdapter
      */
     protected $data;
 
+    /**
+     * Конечная информация для возврата результата обработки.
+     *
+     * Если обработчик выполнил генерацию файлов, то в качестве ключей
+     * используются относительные имена файлов.
+     *
+     * @var mixed
+     */
     protected $info;
 
     abstract public function __construct($rules = [], $scripts = []);
@@ -172,7 +180,7 @@ abstract class FileHandlerAdapterAbstract implements FileHandlerAdapter
      */
     public function getFile()
     {
-        return $this->directory ?? '' . $this->filename;
+        return ($this->directory ?? '') . $this->filename;
     }
 
     /**
@@ -205,7 +213,8 @@ abstract class FileHandlerAdapterAbstract implements FileHandlerAdapter
     abstract public function handle($script = null);
 
     /**
-     * Возвращает всю информацию о всех файлах, в т.ч. пути к файлам.
+     * Возвращает всю информацию о всех файлах, в т.ч. пути к файлам в виде
+     * ключей массива.
      *
      * @return mixed
      */

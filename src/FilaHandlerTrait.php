@@ -39,10 +39,12 @@ trait FileHandlerTrait
      */
     public function save($filename = null, $replace = true)
     {
-        if ($filename) {
-            // имя файла
-        } elseif (isset($this->filename)) {
+        if (empty($filename) && isset($this->filename)) {
             $filename = $this->filename;
+        }
+
+        if (empty($filename)) {
+            return false;
         }
 
         $filename = Str::removeDuplicateSymbols($filename, '/');
@@ -185,13 +187,31 @@ trait FileHandlerTrait
                         $this->files = array_merge_recursive($this->files, $adapters[$handlerKey]->getInfo());
                         // WARNING: Как вернуть информацию при извлечении информации из списка обрабатываемых файлов?
                     }
+
+                    // TODO Выберем сгенерированные файлы и запустим извлечение информации из них
+                    // Нужно реализовать обработку сгенерированных файлов.
+                    // За эту обработку может быть получены:
+                    // 1. информация о сгенерированных файлов
+                    // 2. изменены созданные файлы (MODIFYING)
+                    // и в идеале 3: генерация новых файлов из сгенерированных файлов,
+                    // но возвращать как обычная модификация или модификация
+                    // модификации?
+                    //
+                    // Например, загрузили фильм.
+                    // 1. Переконвертировали его в другой формат
+                    // 2. Создали модификации с разным разрешением
+                    // 3. На основе основного файла сделали скриншоты видеофайла
+                    // 4. На основе скриншотов сделали миниатюры
+                    // 5. На основе основного файла сделали обзор-фильма в виде анимации или видео
+                    // 6. На основе минивидео сделали миниатюру
+
                 }
             }
         }
 
+        // TODO
+
         // Если вообще никакого скрипта не задано, то не происходит обработки
-
-
 
         // 1. Обработка одного файла без перегенерации, только получение значений
         // 2. Обработка файла с генерацей новых файлов и получением значений
@@ -201,10 +221,6 @@ trait FileHandlerTrait
         // За одну обработку файла были сгенерированы файлы от 2-х обработчиков
         // и получены сведения от 3-х обработчиков.
         // Как вариант запускать все обработчики по порядку, а не все сразу
-
-
-
-
 
         // TODO в зависимости от указанного скрипта выполняются те или иные действия
         // для разных адаптеров обработчиков
@@ -224,7 +240,6 @@ trait FileHandlerTrait
         // // Задание имен сохранения файла через setHandlerParameters
 
     }
-
 
     /**
      * Возвращает путь к файлу.
@@ -333,7 +348,7 @@ trait FileHandlerTrait
      */
     public function getBasicFileProperties($handlerGroups = false, $keyType = self::KEY_TYPE_LAST)
     {
-        return $this->getPropertyValuesFromSource($this->fileinfo, $this->basicProperties, $keyType);
+        return $this->getPropertyValuesFromSource($this->originalFileinfo, $this->basicProperties, $keyType);
     }
 
     /**
@@ -345,7 +360,7 @@ trait FileHandlerTrait
     public function getAdditionalFileProperties($handlerGroups = true, $keyType = self::KEY_TYPE_ARRAY)
     {
         // WARNING: В зависимости от типа будут вызываться разные функции и передаваться разные ключи
-        return $this->getPropertyValuesFromSourceExpect($this->fileinfo, Arr::originalKeys($this->basicProperties), $keyType);
+        return $this->getPropertyValuesFromSourceExpect($this->originalFileinfo, Arr::originalKeys($this->basicProperties), $keyType);
     }
 
     /**

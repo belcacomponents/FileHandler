@@ -144,9 +144,6 @@ $scripts = [
         'sequence' => ['fgen', 'finfo'],
         'properties' => ['finfo.size', 'finfo.mime' => 'mimetype', 'finfo.created'],
         'handlers' => [
-            'fgen-original' => [
-
-            ],
             'fgen' => [],
             'finfo' => [],
         ],
