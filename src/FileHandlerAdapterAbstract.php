@@ -2,6 +2,8 @@
 
 namespace Belca\FileHandler;
 
+use Belca\FileHandler\Contracts\FileHandlerAdapter;
+
 /**
  * Адаптер обработки файла.
  *
@@ -9,14 +11,8 @@ namespace Belca\FileHandler;
  * - слияние переданных настроек указанным методом;
  * - вызов обработки файла по указанному сценарию (если используется).
  */
-class FileHandlerAdapterAbstract
+abstract class FileHandlerAdapterAbstract implements FileHandlerAdapter
 {
-    const EXTRACTING = 'extracting';
-
-    const GENERATING = 'generating';
-
-    const MODIFYING = 'modifying';
-
     protected $config;
 
     /**
@@ -38,7 +34,7 @@ class FileHandlerAdapterAbstract
      *
      * @var string
      */
-    protected $file;
+    protected $filename;
 
     /**
      * Путь к директории.
@@ -54,44 +50,43 @@ class FileHandlerAdapterAbstract
      */
     protected $data;
 
-    public function __construct($config = [], $scripts = []);
+    /**
+     * Конечная информация для возврата результата обработки.
+     *
+     * Если обработчик выполнил генерацию файлов, то в качестве ключей
+     * используются относительные имена файлов.
+     *
+     * @var mixed
+     */
+    protected $info;
+
+    abstract public function __construct($rules = [], $scripts = []);
 
     /**
-     * Объедиянет переданные конфигурации обработчика указанным методом и
+     * Объедиянет переданные правила обработчика указанным методом и
      * возвращает их.
      *
-     * @param  string $mergeMethod Метод слияния
-     * @param  mixed  $configs     Перечисление настроек обработчика
+     * @param  string $method
+     * @param  mixed  $rules
      * @return mixed
      */
-    abstract public static function merge($mergeMethod, ...$configs);
+    abstract public static function mergeRules($method, ...$rules);
+
+    /**
+     * Объединяет переданные скрипты указанным методом слияния и возвращает их.
+     *
+     * @param  string $method
+     * @param  mixed  $scripts
+     * @return mixed
+     */
+    abstract public static function mergeScripts($method, ...$scripts);
 
     /**
      * Возвращает тип обработчика: порождающий, извлекающий или модифицирующий.
      *
      * @var string
      */
-    abstract public static getHandlerType();
-
-    /**
-     * Устанавливает конфигурацию обработки файла.
-     *
-     * @param mixed $config
-     */
-    public function setConfig($config = [])
-    {
-
-    }
-
-    /**
-     * Возвращает конфигурацию обработчика.
-     *
-     * @return mixed
-     */
-    public function getConfig()
-    {
-        // TODO объединяет все данные
-    }
+    abstract public static function getHandlerType();
 
     /**
      * Устанавливает возможные сценарии обработки файла.
@@ -136,16 +131,26 @@ class FileHandlerAdapterAbstract
     /**
      * Задает относительный путь к обрабатываемому файлу и директорию.
      *
-     * @param string $file
+     * @param string $filename
      * @param string $directory
      */
-    public function setFile($file, $directory = null)
+    public function setFile($filename, $directory = null)
     {
-        $this->file = $file;
+        $this->filename = $filename;
 
         if (isset($directory)) {
             $this->directory = $directory;
         }
+    }
+
+    /**
+     * Возвращает относительный путь к файлу.
+     *
+     * @return string
+     */
+    public function getFilename()
+    {
+        return $this->filename;
     }
 
     /**
@@ -159,16 +164,6 @@ class FileHandlerAdapterAbstract
     }
 
     /**
-     * Возвращает относительный путь к файлу.
-     *
-     * @return string
-     */
-    public function getFile()
-    {
-        return $this->file;
-    }
-
-    /**
      * Возвращает путь к директории.
      *
      * @return string
@@ -176,6 +171,16 @@ class FileHandlerAdapterAbstract
     public function getDirectory()
     {
         return $this->directory;
+    }
+
+    /**
+     * Возвращает абсолютное имя файла.
+     *
+     * @return string
+     */
+    public function getFile()
+    {
+        return ($this->directory ?? '') . $this->filename;
     }
 
     /**
@@ -208,9 +213,13 @@ class FileHandlerAdapterAbstract
     abstract public function handle($script = null);
 
     /**
-     * Возвращает всю информацию о всех файлах, в т.ч. пути к файлам.
+     * Возвращает всю информацию о всех файлах, в т.ч. пути к файлам в виде
+     * ключей массива.
      *
      * @return mixed
      */
-    public function getInfo();
+    public function getInfo()
+    {
+        return $this->info;
+    }
 }

@@ -108,15 +108,82 @@ FileHandler позволяет извлекать конкретные (базо
 
 | Метод класса | Описание |
 |--|--|
-| addClass($className) | Добавляет указанный класс в список классов-обработчиков. Добавляемый класс должен быть расширен классом FileExplorer. |
-|getClasses()|Возвращает список добавленных классов. |
-|file($filename, $virtualProperties = null)|Возвращает сведения о файле. Если в параметре $virtualProperties указан список *виртуальных свойств*, то будут возвращены указанные виртуальные свойства.|
-|getFileinfo($filename, $virtualProperty)|Возвращает информацию конкретного виртуального свойства указанного файла.|
+| setOriginalFile($file, $fileinfo = []) | Задает файл для обработки. Вторым параметром может быть передана информация о файле (ассоциативный массив): оригинальное имя, тип файла, расширение файла. Оригинальным файлом может быть загруженный файл методом POST, находящийся во временной директории PHP (например, */tmp/filename*). |
+|setDirectory($directory = '')|Устанавливает рабочую директорию для сохранения новых файлов или сохранения оригинального файла.|
+|setHandlers($handlers = [], $method = self::METHOD_MERGE)|Задает список обработчиков файла и метод слияния данных. Все обработчики должны реализовывать интерфейс *FileHandlerAdapter*. |
+|save($filename = null, $replace = true)|Сохраняет оригинальный файл в указанную директорию или если задано новое имя файла с относительным путем к файлу от рабочей директории, то туда. Если файл существует, то он будет заменен, если не изменен второй параметр на *false*.|
+|handle($params = null)|Запускает обработку файла.|
+|getFilePath()|Возвращает путь к новому (сохраненному или модифицированному) исходному файлу.|
+|getFilePaths()|Возвращает пути к файлам-модификациям, если они были созданы.|
+|getFileInfo($handlerGroups = true)|Возвращает сгруппированную информацию об оригинальном файле.|
+|getAllInfo($handlerGroups = true)|Возвращает сгруппированную информацию о всех файлах-модификациях, если они существуют.|
+|setBasicPropertyNames($properties)|Устанавливает названия основных свойств файла.  Название свойств указываются через точку (например, 'finfo.color'), где первое значение - имя обработчика, второе - имя возвращаемого свойства обработчиком.|
+|getBasicFileProperties($handlerGroups = false)|Возвращает основную информацию о файле в соответствии с основными полями. По умолчанию результат не объединяется в группы обработчиков, т.к.      чаще всего эти значения используются для массовой записи в основные поля таблицы. При необходимости этот параметр можно изменить.|
+|getAdditionalFileProperties($handlerGroups = true)|Возвращает дополнительную информацию о файле в соответствии с основными полями (возвращает все свойства, кроме заданных).|
+|getBasicProperties($handlerGroups = false)|Возвращает базовые свойства всех файлов-модификаций. Такой же принцип как у оригинального файла.|
+|getAdditionalProperties($handlerGroups = true)|Возвращает дополнительные свойства всех файлов в соответствии с основными полями (возвращает все свойства, кроме заданных). |
 
 # Как использовать FileHandler?
 
 Установите FileHandler через composer (хранилище Packagist) или сделав клон с репозитория Github.
 
+$handlers = [
+    'finfo' => \Belca\File\FileHandler\FInfoHandler::class,
+];
+
+$rules = [
+    'finfo' => [
+        'handlers' => [
+            'basic' => \Belca\FInfo\BasicFileinfo::class,
+        ]
+    ],
+];
+
+$scripts = [
+    'user-device' => [
+        'sequence' => ['fgen', 'finfo'],
+        'properties' => ['finfo.size', 'finfo.mime' => 'mimetype', 'finfo.created'],
+        'handlers' => [
+            'fgen' => [],
+            'finfo' => [],
+        ],
+    ],
+];
+
+$directory = '/usr/www/html/webapp/files';
+
+$fileHandler = new FileHandler($handlers, $rules, $scripts); // Правила обработки и скрипты могут быть изменены отдельно
+$fileHandler->setDirectory($directory);
+$fileHandler->setOriginalFile($originalFile, $fileinfo);
+$fileHandler->setNameExecutableScript($scriptName);
+
+// Последовательность выполнения обработчиков может быть задана в сценарии обработки файла
+$fileHandler->setHandlersSequence($sequence);
+
+// Базовые свойства могут быть заданы в сценарии обработки файла
+$fileHandler->setBasicPropertyNames($basicPropertyNames);
+
+// Каждый обработчик включает метод объединения правил и сценариев или же
+// используется стандартный метод слияния данных.
+
+// При необходимости можно объединить правила обработки или сценарии обработки
+// после инициализации класса. Также можно воспользоваться утилитами для
+// объединения данных за пределами экземпляра класса. FilaHandlerUtility
+
+// Сохраним оригинальный файл в новую директорию и выполним обработку
+if ($fileHandler->save($filename)) {
+    $fileHandler->handle($script);
+
+    // Получаем информацию после обработки файла
+
+    // Информация об оригинальном файле
+    $basicFileinfo = $fileHandler->getBasicFileProperties();
+    $additionalFileinfo = fileHandler->getAdditionalFileProperties();
+
+    // Информация о модификациях
+    $basicPropertiesModifications = $fileHandler->getBasicProperties();
+    $additinalPropertiesModifications = $fileHandler->getAdditionalProperties();
+}
 
 
 ## Разработка и подключение обработчиков (FileHandlerAdapter)

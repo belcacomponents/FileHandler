@@ -59,11 +59,49 @@ interface FileHandler
     const METHOD_BREAK = 'break';
 
     /**
+     * Тип ключа "last" - возвращает последний элемент ключа полученный
+     * в виде строки объединенной через точку ('finfo.size' -> 'size').
+     *
+     * @var string
+     */
+    const KEY_TYPE_LAST = 'last';
+
+    /**
+     * Тип ключа "whole" - возвращает неизменный вид ключа ('finfo.size' -> 'finfo.size').
+     *
+     * @var string
+     */
+    const KEY_TYPE_WHOLE = 'whole';
+
+    /**
+     * Тип ключа "array" - возвращает значение ключа в указанной позиции массива.
+     * Например, с ключом 'finfo.size' значение будет в массиве
+     * [
+     *    'finfo' => [
+     *        'size' => 'value',
+     *    ],
+     * ]
+     *
+     * @var string
+     */
+    const KEY_TYPE_ARRAY = 'array';
+
+    /**
+     * Задает массив обработчиков, правила обработки обработчиков и сценарии
+     * обработки файлов.
+     *
+     * @param array $handlers
+     * @param mixed $rules
+     * @param mixed $scripts
+     */
+    public function __construct($handlers, $rules = null, $scripts = null);
+
+    /**
      * Задает путь к файлу и дополнительные сведения о файле: оригинальное имя,
      * расширение файла.
      *
-     * @param string $file      Абсолютный путь к файлу
-     * @param array  $fileinfo  Базовая информация о файле
+     * @param  string $file      Абсолютный путь к файлу
+     * @param  array  $fileinfo  Базовая информация о файле
      * @return bool
      */
     public function setOriginalFile($file, $fileinfo = []);
@@ -86,7 +124,7 @@ interface FileHandler
      * Устанавливает директорию для работы с файлом. Указанная директория
      * используется в качестве префикса пути к новым файлам.
      *
-     * @param string $directory
+     * @param  string $directory
      * @return bool
      */
     public function setDirectory($directory = '');
@@ -99,52 +137,11 @@ interface FileHandler
     public function getDirectory();
 
     /**
-     * Задает обработчики файлов.
-     *
-     * @param array   $handlers    Обработчики файлов
-     * @param string  $method      Метод слияния данных
-     */
-    public function setHandlers($handlers = [], $method = self::METHOD_MERGE);
-
-    /**
-     * Возвращает локальных обработчиков.
+     * Возвращает список обработчиков.
      *
      * @return array
      */
     public function getHandlers();
-
-    /**
-     * Возвращает глобальных обработчиков.
-     *
-     * @return array
-     */
-    public static function getGlobalHandlers();
-
-    /**
-     * Возвращает используемые обработчики - объединяет глобальных и локальных
-     * обработчиков и возвращает эти данные.
-     *
-     * @return array
-     */
-    public function getUsedHandlers();
-
-    /**
-     * Добавляет нового глобального обработчика.
-     *
-     * @param string  $key          Ключ обработчика
-     * @param string  $handlerClass Класс обработчика
-     * @param boolean $replace      Замена существующего обработчика
-     */
-    public static function addGlobalHandler($key, $handlerClass, $replace = true);
-
-    /**
-     * Добавляет локального обработчика.
-     *
-     * @param string  $key          Ключ обработчика
-     * @param string  $handlerClass Класс обработчика
-     * @param boolean $replace      Замена существующего обработчика
-     */
-    public function addHandler($key, $handlerClass, $replace = true);
 
     /**
      * Возвращает имя класса обработчика по ключу.
@@ -165,7 +162,7 @@ interface FileHandler
     /**
      * Проверяет существование обработчика по ключу.
      *
-     * @param  string $key
+     * @param  string  $key
      * @return boolean
      */
     public function handlerExistsByKey($key);
@@ -173,183 +170,89 @@ interface FileHandler
     /**
      * Проверяет существование обработчика по имени класса.
      *
-     * @param  string $className
+     * @param  string  $className
      * @return boolean
      */
     public function handlerExistsByClassName($className);
 
     /**
-     * Проверяет существование глобального обработчика по имени класса.
-     *
-     * @param  string $className
-     * @return boolean
-     */
-    public static function globalHandlerExistsByClassName($className);
-
-    /**
-     * Проверяет по ключу, глобальный ли обработчик.
-     *
-     * @param  string  $key
-     * @return boolean
-     */
-    public function isGlobalHandler($key);
-
-    /**
-     * Проверяет по ключу, локальный ли обработчик.
-     *
-     * @param  string  $key
-     * @return boolean
-     */
-    public function isLocalHandler($key);
-
-    /**
-     * Удаляет локального обработчика по ключу.
-     *
-     * @param  string $key
-     * @return void
-     */
-    public function deleteHandlerByKey($key);
-
-    /**
-     * Удаляет глобального обработчика по ключу.
-     *
-     * @param  string $key
-     * @return void
-     */
-    public function deleteGlobalHandlerByKey($key);
-
-    /**
-     * Устанавливает общую конфигурацию обработки файла.
-     *
-     * @param mixed $config Конфигурация обработки файла
-     */
-    public function setHandlerConfig($config);
-
-    /**
-     * Добавляет новую конфигурацию обработки файла.
-     *
-     * @param mixed   $config    Конфигурация обработки файла
-     * @param string  $method    Метод слияния данных
-     */
-    public function addHandlerConfig($config, $method = self::METHOD_MERGE);
-
-    /**
-     * Добавляет новую глобальную конфигурацию обработки файла.
-     *
-     * @param string $key      Ключ обработчика
-     * @param mixed  $config   Конфигурация обработки файла
-     * @param string $method   Метод слияния данных
-     */
-    public static function addGlobalHandlerConfig($key, $config, $method = self::METHOD_REPLACE);
-
-    /**
-     * Возвращает настройки обработки файла.
-     *
-     * @return mixed
-     */
-    public function getHandlerConfig();
-
-    /**
-     * Возвращает глобальные настройки обработки файла.
-     *
-     * @return mixed
-     */
-    public function getGlobalHandlerConfig();
-
-    /**
-     * Возвращает конфигурацию обработчика файла по указанному ключу обработчика.
-     *
-     * @param  string $key Ключ обработчика
-     * @return mixed
-     */
-    public function getHandlerConfigByKey($key);
-
-    /**
-     * Возвращает глобальную конфигурацию обработчика файла по указанному ключу.
-     * @param  string $key Ключ обработчика
-     * @return mixed
-     */
-    public static function getGlobalHandlerConfigByKey($key);
-
-    /**
-     * Возвращает используемую конфигурацию обработчиков объединяя значения
-     * глобальной конфигурации с локальной.
-     *
-     * @return mixed
-     */
-    public function getUsedHandlerConfig();
-
-    /**
-     * Возвращает используемую конфигурацию указанного обработчика объединяя
-     * значение глобальных настройками с локальными.
-     *
-     * @param  string $key Ключ обработчика
-     * @return mixed
-     */
-    public function getUsedHandlerConfigByKey($key);
-
-    /**
-     * Возвращает ключи локальных обработчиков.
+     * Возвращает ключи обработчиков.
      *
      * @return array
      */
     public function getHandlerKeys();
 
     /**
-     * Возвращает ключи глобальных обработчиков.
+     * Задает правила к указанному обработчику файла. Если у обработчика уже
+     * заданы правила, то выполняется слияние массивов указанным методом.
      *
+     * @param string $handlerKey
+     * @param mixed  $rules
+     * @param string $method
+     */
+    public function setHandlerRules($handlerKey, $rules, $method = self::METHOD_MERGE);
+
+    /**
+     * Возвращает правила обработчика.
+     *
+     * @param  string $handlerKey
+     * @return mixed
+     */
+    public function getHandlerRules($handlerKey);
+
+    /**
+     * Добавляет сценарий обработки файла с указанным именем сценария. Если
+     * сценарий с указанным именем существует, то выполняется слияние массивов
+     * сценария указанным методом.
+     *
+     * @param string $scriptName
+     * @param mixed  $script
+     * @param string $method
+     */
+    public function addScript($scriptName, $script, $method = self::METHOD_MERGE);
+
+    /**
+     * Возвращает сценарий обработки файла по названию сценария.
+     *
+     * @param  string $scriptName
+     * @return mixed
+     */
+    public function getScriptByScriptName($scriptName);
+
+    /**
+     * Возвращает все заданные сценарии обработки файлов.
+     *
+     * @return mixed
+     */
+    public function getScripts();
+
+    /**
+     * Возвращает список обработчиков сценария по указанному имени сценария.
+     *
+     * @param  string $scriptName
      * @return array
      */
-    public static function getGlobalHandlerKeys();
+    public function getScriptHandlersByScriptName($scriptName);
 
     /**
-     * Возвращает глобальные и локальные ключи обработчиков.
+     * Задает основные названия свойств файла. Если названия основных свойств
+     * уже заданы, то дополняет их новыми свойствами, если иное это не определено
+     * во втором параметре.
+     *
+     * Название свойств указываются через точку (например, 'finfo.color' или
+     * 'finfo.color' => 'color'), где первое значение - имя обработчика,
+     * второе - имя возвращаемого свойства обработчиком.
+     *
+     * @param array $properties
+     */
+    public function setBasicPropertyNames($properties, $method = self::METHOD_MERGE);
+
+    /**
+     * Возвращает основные названия свойств файла.
      *
      * @return mixed
      */
-    public function getAllHandlerKeys();
-
-    /**
-     * Задает правила обработки оригинального файла.
-     *
-     * @param mixed $handlingScript
-     */
-    public function setOriginalFileHandlingRules($rules);
-
-    /**
-     * Задает правила обработки оригинального файла.
-     *
-     * @return mixed
-     */
-    public function getOriginalFileHandlingRules();
-
-    /**
-     * Задает сценарий обработки оригинального файла.
-     *
-     * @param mixed $handlingScript
-     */
-    public function setOriginalFileHandlingScript($handlingScript);
-
-    /**
-     * Возвращает сценарий обработки оригинального файла.
-     *
-     * @return mixed
-     */
-    public function getOriginalFileHandlingScript();
-
-    /**
-     * Задает имя исполняемого сценария обработки оригинального файла.
-     *
-     * @param string $name
-     */
-    public function setExecutableScriptHandlingOriginalFile($name);
-
-    /**
-     * Возвращает имя исполняемого сценария обработки оригинального файла.
-     *
-     * @return string
-     */
-    public function getExecutableScriptHandlingOriginalFile();
+    public function getBasicPropertyNames();
 
     /**
      * Задает сценарий обработки файла.
@@ -362,68 +265,90 @@ interface FileHandler
      *
      * @param mixed $handlingScript
      */
-    public function setFileHandlingScript($handlingScript);
+    public function setHandlingScript($handlingScript);
 
     /**
      * Возвращает сценарий обработки файла.
      *
      * @return mixed
      */
-    public function getFileHandlingScript();
+    public function getHandlingScript();
 
     /**
-     * Задает имя исполняемого сценария обработки файла.
+     * Задает сценарий обработки файла по имени сценария.
      *
      * @param string $name
      */
-    public function setExecutableScriptHandlingFile($name);
+    public function setHandlingScriptByScriptName($name);
 
     /**
-     * Возвращает имя исполняемого сценария обработки файла.
+     * Возвращает имя заданного сценария обработки файла.
      *
      * @return string
      */
-    public function getExecutableScriptHandlingFile();
+    public function getHandlingScriptByScriptName();
 
-    // TODO задать карту обработки, в которой прописано в каком порядке делать обработку,
-    // условия обработки, передачу данных и т.п.
+    /**
+     * Задает последовательность выполнения обработчиков.
+     *
+     * Последовательность обработчиков желательно должна соответствовать
+     * правилу порядку выполнения обработчиков (модифицирующие,
+     * генерирующие, извлекающие), иначе после обработки может быть получен
+     * неподходящий результат выполнения обработки.
+     * Если в последовательности не указаны обработчики, которые были заданы
+     * в списке обработчиков, то они не будут выполняться.
+     *
+     * @param array $sequence Список обработчиков в порядке их выполнения
+     */
+    public function setHandlersSequence($sequence);
+
+    /**
+     * Возвращает последовательность выполнения обработчиков.
+     *
+     * Если последовательность обработчиков не была задана, то будет возвращена
+     * последовательность по умолчанию: модифицирующие обработчики,
+     * генерирующие обработчики, извлекающие обрабочики; при этом,
+     * обработчики будут отсортированы в порядке добавления в список обработчиков.
+     *
+     * @return array
+     */
+    public function getHandlersSequence();
 
     /**
      * Сохраняет файл со стандартным или указанным именем файла. При успешном
      * сохранении возвращает true.
      *
-     * @param string   $filename Новое имя файла относительно рабочей директории
-     * @param bool     $replace  Заменяет существующий файл
+     * @param  string   $filename Новое имя файла относительно рабочей директории
+     * @param  bool     $replace  Заменяет существующий файл
      * @return boolean
      */
     public function save($filename = null, $replace = true);
 
     /**
-     * Запускает модифицирующую и извлекающую обработку главного файла.
+     * Запускает обработку файла с возможность изменения сценария обработки
+     * файла.
      *
-     * @param  mixed $params Новые параметры обработки файла
+     * Если не определен порядок выполнения обработчиков, то обработчики
+     * выполняются в следующем порядке: модифицирующие, генерирующие,
+     * извлекающие. Каждый из обработчиков определяет свои значения.
+     * При использовании нескольких модифицирующих обработчиков для предсказуемой
+     * работы необходимо использовать в сценарии обработки порядок выполнения
+     * обработчиков.
+     *
+     * @param  mixed $scriptModification Измененные значения сценария обработки файла
      * @return void
      */
-    public function handleOriginalFile($params = null);
+    public function handle($scriptModification = null);
 
     /**
-     * Запускает порождающую и извлекающую обработку файла по заданным
-     * параметрам или параметрам по умолчанию.
-     *
-     * @param  mixed $params Новые параметры обработки файла
-     * @return void
-     */
-    public function handle($params = null);
-
-    /**
-     * Возвращает путь к файлу.
+     * Возвращает путь к исходному файлу (сохраненному или модифицированному).
      *
      * @return string
      */
     public function getFilePath();
 
     /**
-     * Возвращает пути к файлам.
+     * Возвращает пути к файлам-модификациям.
      *
      * @return array
      */
@@ -439,7 +364,7 @@ interface FileHandler
      * @param  boolean $handlerGroups Группировать свойства по обработчикам
      * @return mixed
      */
-    public function getFileInfo($handlerGroups = true);
+    public function getFileInfo($handlerGroups = true, $keyType = self::KEY_TYPE_WHOLE);
 
     /**
      * Возвращает всю информацию о всех файлах.
@@ -451,25 +376,7 @@ interface FileHandler
      * @param  boolean $handlerGroups Группировать свойства по обработчикам
      * @return mixed
      */
-    public function getAllInfo($handlerGroups = true);
-
-    /**
-     * Задает основные названия свойств файла.
-     *
-     * Название свойств указываются через точку (например, 'finfo.color'),
-     * где первое значение - имя обработчика, второе - имя возвращаемого свойства
-     * обработчиком.
-     *
-     * @param array $properties Название свойств
-     */
-    public function setBasicPropertyNames($properties);
-
-    /**
-     * Возвращает основные названия свойств файла.
-     *
-     * @return array
-     */
-    public function getBasicPropertyNames();
+    public function getAllInfo($handlerGroups = true, $keyType = self::KEY_TYPE_WHOLE);
 
     /**
      * Возвращает основную информацию о файле в соответствии с основными полями.
@@ -480,7 +387,7 @@ interface FileHandler
      *
      * @return mixed
      */
-    public function getBasicFileProperties($handlerGroups = false);
+    public function getBasicFileProperties($handlerGroups = false, $keyType = self::KEY_TYPE_LAST);
 
     /**
      * Возвращает дополнительную информацию о файле в соответствии с основными
@@ -493,14 +400,14 @@ interface FileHandler
      *
      * @return mixed
      */
-    public function getAdditionalFileProperties($handlerGroups = true);
+    public function getAdditionalFileProperties($handlerGroups = true, $keyType = self::KEY_TYPE_ARRAY);
 
     /**
      * Возвращает базовые свойства всех файлов.
      *
      * @return mixed
      */
-    public function getBasicProperties($handlerGroups = false);
+    public function getBasicProperties($handlerGroups = false, $keyType = self::KEY_TYPE_LAST);
 
     /**
      * Возвращает дополнительные свойства всех файлов в соответствии с основными
@@ -508,5 +415,5 @@ interface FileHandler
      *
      * @return mixed
      */
-    public function getAdditionalProperties($handlerGroups = true);
+    public function getAdditionalProperties($handlerGroups = true, $keyType = self::KEY_TYPE_ARRAY);
 }
