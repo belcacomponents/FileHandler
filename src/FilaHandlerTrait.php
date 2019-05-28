@@ -177,15 +177,31 @@ trait FileHandlerTrait
                     if ($className::getHandlerType() == FileHandlerAdapter::EXTRACTING) {
                         $this->fileinfo[$handlerKey] = $adapters[$handlerKey]->getInfo();
                     }
+
                     // Сохраняем информацию модифицирующего обработчика: информация и путь к файлу
                     elseif ($className::getHandlerType() == FileHandlerAdapter::MODIFYING) {
                         $this->fileinfo[$handlerKey] = $adapters[$handlerKey]->getInfo();
                         $this->file = $adapters[$handlerKey]->getFilename();
                     }
-                    // Сохраняем информацию генерирующего обработчика: информация и список файлов
+
+                    // Сохраняем информацию генерирующего обработчика:
+                    // список файлов и информация о них
                     else {
-                        $this->files = array_merge_recursive($this->files, $adapters[$handlerKey]->getInfo());
-                        // WARNING: Как вернуть информацию при извлечении информации из списка обрабатываемых файлов?
+                        if (empty($this->files)) {
+                            $this->files = [];
+                        }
+
+                        $generatedFiles = $adapters[$handlerKey]->getInfo();
+
+                        // Добавляем каждому файлу информацию обработчика
+                        // WARNING: При использовании разных дисков и одинаковых
+                        // путях возникнет конфликт информации. Поэтому
+                        // в обработчиках не следует изменять хранилище файлов.
+                        if (is_array($generatedFiles) && count($generatedFiles)) {
+                            foreach ($generatedFiles as $filename => $info) {
+                                $this->files[$filename][$handlerKey] = $info;
+                            }
+                        }
                     }
 
                     // TODO Выберем сгенерированные файлы и запустим извлечение информации из них
@@ -258,7 +274,9 @@ trait FileHandlerTrait
      */
     public function getFilePaths()
     {
-        return array_keys($this->files ?? []);
+        $keys = array_keys($this->files ?? []);
+
+        return array_combine($keys, $keys);
     }
 
     /**
@@ -348,7 +366,7 @@ trait FileHandlerTrait
      */
     public function getBasicFileProperties($handlerGroups = false, $keyType = self::KEY_TYPE_LAST)
     {
-        return $this->getPropertyValuesFromSource($this->originalFileinfo, $this->basicProperties, $keyType);
+        return $this->getPropertyValuesFromSource($this->fileinfo, $this->basicProperties, $keyType);
     }
 
     /**
@@ -360,7 +378,8 @@ trait FileHandlerTrait
     public function getAdditionalFileProperties($handlerGroups = true, $keyType = self::KEY_TYPE_ARRAY)
     {
         // WARNING: В зависимости от типа будут вызываться разные функции и передаваться разные ключи
-        return $this->getPropertyValuesFromSourceExpect($this->originalFileinfo, Arr::originalKeys($this->basicProperties), $keyType);
+        // TODO добавить в минусы исключенные свойства
+        return $this->getPropertyValuesFromSourceExpect($this->fileinfo, Arr::originalKeys($this->basicProperties), $keyType);
     }
 
     /**
@@ -391,9 +410,10 @@ trait FileHandlerTrait
     {
         $result = [];
 
-        if (! empty($this->files)) {
+        if (isset($this->files) && is_array($this->files) && count($this->files)) {
             foreach ($this->files as $filename => $fileinfo) {
-                $result[$filename] = $this->getPropertyValuesFromSource($fileinfo, Arr::originalKeys($this->basicProperties), $keyType);
+                // TODO добавить в минусы исключенные свойства
+                $result[$filename] = $this->getPropertyValuesFromSourceExpect($fileinfo, Arr::originalKeys($this->basicProperties), $keyType);
             }
         }
 
